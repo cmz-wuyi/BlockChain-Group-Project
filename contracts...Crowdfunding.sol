@@ -9,16 +9,29 @@ contract Crowdfunding {
     address public owner;
     bool public paused;
 
+    enum CampaignState { Active, Successful, Failed } //众筹活动状态
+    CampaignState public state;
+
     struct Tier { //捐款等级
         string name;
         uint256 amount;
         uint256 backers; //支持者数量
     }
-
     Tier[] public tiers;
+
+    struct Backer { //支持者信息
+        uint256 totalContribution; //捐款金额
+        mapping(uint256 => bool) fundedTiers; //支持者的捐款等级
+    }
+    mapping(address => Backer) public backers;
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Not the Owner");
+        _;
+    }
+    
+    modifier campaignOpen() {
+        require(state == CampaignState.Active, "Campaign is not active.");
         _;
     }
 
@@ -33,20 +46,33 @@ contract Crowdfunding {
         goal = _goal;
         deadline = block.timestamp + (_duratyionInDays * 1 days);
         owner = msg.sender;
+        state = CampaignState.Active;
     }
 
-    function fund(uint256 _tierIndex) public payable { //捐款
+    function checkAndUpdateCampaignState() internal { //检查并更新众筹活动状态，是否结束或达到要求
+        if(state == CampaignState.Active) {
+            if(block.timestamp >= deadline) {
+                state = address(this).balance >= goal ? CampaignState.Successful : CampaignState.Failed;            
+            } else {
+                state = address(this).balance >= goal ? CampaignState.Successful : CampaignState.Active;
+            }
+        }
+    }
+
+    function fund(uint256 _tierIndex) public payable campaignOpen { //捐款
         require(_tierIndex < tiers.length, "Invalid tier.");
-        require(block.timestamp < deadline, "Campaign has ended");
         require(msg.value == tiers[_tierIndex].amount, "Incorrect amount.");
         tiers[_tierIndex].backers++;
+        backers[msg.sender].totalContribution += msg.value; //录入支持者捐款数量
+        backers[msg.sender].fundedTiers[_tierIndex] = true; //录入支持者钱包地址与支持等级
+        checkAndUpdateCampaignState(); //检查活动是否结束或达到要求
     }
 
     function withdraw() public onlyOwner{ //提款
-        require(msg.sender == owner, "Only the owner can withdraw");
-        require(address(this).balance >= goal, "Goal had not been reached");
+        checkAndUpdateCampaignState(); //检查活动是否结束或达到要求
+        require(state == CampaignState.Successful, "Campaign not successful.");
         uint256 balance = address(this).balance;
-        require(balance >0 , "No balance to withdraw");
+        require(balance > 0, "No balance to withdraw");
         payable(owner).transfer(balance);
     }
 
@@ -66,5 +92,18 @@ contract Crowdfunding {
         require(_index < tiers.length, "Tier does not exist.");
         tiers[_index] = tiers[tiers.length -1];
         tiers.pop();
+    }
+
+    function refund() public { //活动失败后进行退款
+        checkAndUpdateCampaignState(); //检查活动是否结束或达到要求
+        require(state == CampaignState.Failed, "Refunds not available.");
+        uint256 amount = backers[msg.sender].totalContribution;
+        require(amount > 0, "No contribution to refund");
+        backers[msg.sender].totalContribution = 0;
+        payable(msg.sender).transfer(amount);
+    }
+
+    function hasFundedTier(address _backer, uint256 _tierIndex) public view returns (bool) { //检查用户是否为某个捐款等级提供资金
+        return backers[_backer].fundedTiers[_tierIndex];
     }
 }
