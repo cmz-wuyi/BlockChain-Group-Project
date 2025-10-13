@@ -25,13 +25,18 @@ contract Crowdfunding {
     }
     mapping(address => Backer) public backers;
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Not the Owner");
+    modifier onlyOwner() { //操作人限制
+        require(msg.sender == owner, "Not the owner");
         _;
     }
     
-    modifier campaignOpen() {
+    modifier campaignOpen() { //活动状态限制
         require(state == CampaignState.Active, "Campaign is not active.");
+        _;
+    }
+
+    modifier notPaused() { //活动暂停限制
+        require(!paused, "Contract is paused.");
         _;
     }
 
@@ -59,7 +64,7 @@ contract Crowdfunding {
         }
     }
 
-    function fund(uint256 _tierIndex) public payable campaignOpen { //捐款
+    function fund(uint256 _tierIndex) public payable campaignOpen notPaused{ //捐款
         require(_tierIndex < tiers.length, "Invalid tier.");
         require(msg.value == tiers[_tierIndex].amount, "Incorrect amount.");
         tiers[_tierIndex].backers++;
@@ -94,6 +99,10 @@ contract Crowdfunding {
         tiers.pop();
     }
 
+    function getTiers() public view returns (Tier[] memory) { //显示捐款等级
+        return tiers;
+    }
+
     function refund() public { //活动失败后进行退款
         checkAndUpdateCampaignState(); //检查活动是否结束或达到要求
         require(state == CampaignState.Failed, "Refunds not available.");
@@ -105,5 +114,20 @@ contract Crowdfunding {
 
     function hasFundedTier(address _backer, uint256 _tierIndex) public view returns (bool) { //检查用户是否为某个捐款等级提供资金
         return backers[_backer].fundedTiers[_tierIndex];
+    }
+
+    function togglePause() public onlyOwner { //暂停操作
+        paused = !paused;
+    }
+
+    function getCampaignStatus() public view returns (CampaignState) { //显示众筹活动状态
+        if (state == CampaignState.Active && block.timestamp > deadline) {
+            return address(this).balance >= goal ? CampaignState.Successful : CampaignState.Failed;
+        }
+        return state;
+    }
+
+    function extendDeadline(uint256 _daysToAdd) public onlyOwner campaignOpen { //延长总筹活动天数
+        deadline += _daysToAdd * 1 days;
     }
 }
