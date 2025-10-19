@@ -41,6 +41,7 @@ contract Crowdfunding {
     }
 
     constructor( //录入信息
+        address _owner,
         string memory _name, //捐款名称
         string memory _description, //捐款描述
         uint256 _goal, //捐款目标
@@ -50,7 +51,7 @@ contract Crowdfunding {
         description = _description;
         goal = _goal;
         deadline = block.timestamp + (_duratyionInDays * 1 days);
-        owner = msg.sender;
+        owner = _owner;
         state = CampaignState.Active;
     }
 
