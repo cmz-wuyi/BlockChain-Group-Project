@@ -7,7 +7,7 @@ contract CrowdfundingFactory {
     address public owner;
     bool public paused;
 
-    struct Campaign { //竞选结构
+    struct Campaign { //Campaign structure
         address campaignAddress;
         address owner;
         string name;
