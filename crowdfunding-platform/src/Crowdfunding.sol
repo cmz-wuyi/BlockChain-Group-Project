@@ -95,6 +95,7 @@ contract Crowdfunding {
     }
 
     function removeTier(uint256 _index) public onlyOwner { //Remove donation tier
+        require(tiers[_index].backers == 0, "Cannot remove a tier that already has backers.");
         require(_index < tiers.length, "Tier does not exist.");
         tiers[_index] = tiers[tiers.length -1];
         tiers.pop();

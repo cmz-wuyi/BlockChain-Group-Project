@@ -2,7 +2,10 @@
   "name": "forge-starter",
   "version": "1.0.0",
   "main": "index.js",
-  "repository": "https://github.com/thirdweb-example/forge-starter.git",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thirdweb-example/forge-starter.git"
+  },
   "author": "thirdweb <eng@thirdweb.com>",
   "license": "MIT",
   "dependencies": {
@@ -12,5 +15,16 @@
     "build": "npx thirdweb@latest detect",
     "deploy": "npx thirdweb@latest deploy",
     "release": "npx thirdweb@latest release"
-  }
+  },
+  "description": "Create a project using this example:",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "devDependencies": {},
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/thirdweb-example/forge-starter/issues"
+  },
+  "homepage": "https://github.com/thirdweb-example/forge-starter#readme"
 }
