@@ -1,7 +1,7 @@
 import { getContract } from "thirdweb";
 import { sepolia } from "thirdweb/chains";
 import { useReadContract } from "thirdweb/react";
-import { client } from "@/app/client"; // 确保 client 路径正确
+import { client } from "@/app/client"; // Ensure the client path is correct
 
 const fromWei = (
     weiAmount: bigint | undefined | null,
@@ -21,18 +21,18 @@ const fromWei = (
     return `${integerPart}.${trimmedFractional}`;
 };
 
-// Sepolia 测试网的 Chainlink ETH/USD 价格源地址
+// Chainlink ETH/USD Price Feed address on Sepolia testnet
 const CHAINLINK_ETH_USD_FEED = "0x694AA1769357215DE4FAC081bf1f309aDC325306";
 
-// Chainlink 价格源返回的数据结构 ABI
+// ABI for the Chainlink price feed data structure
 const CHAINLINK_ABI = "function latestRoundData() view returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)";
 
-// Chainlink 价格使用 8 位小数
+// Chainlink price feeds use 8 decimals
 const CHAINLINK_DECIMALS = 8;
 
 /**
  * @name useEthUsdPrice
- * @description 一个自定义 Hook，用于从 Chainlink 获取当前的 ETH/USD 价格。
+ * @description Custom hook to fetch the current ETH/USD price from Chainlink.
  * @returns { price: number, isLoadingPrice: boolean }
  */
 export const useEthUsdPrice = () => {
@@ -42,7 +42,7 @@ export const useEthUsdPrice = () => {
         address: CHAINLINK_ETH_USD_FEED,
     });
 
-    // 读取最新的价格数据
+    // Read the latest price data
     const { data: latestRoundData, isLoading: isLoadingPrice } = useReadContract({
         contract: contract,
         method: CHAINLINK_ABI,
@@ -52,10 +52,10 @@ export const useEthUsdPrice = () => {
     let price: number = 0;
 
     if (latestRoundData) {
-        // latestRoundData 是一个数组，价格在索引 1 (answer)
+        // latestRoundData is an array, the price (answer) is at index 1
         const priceAsBigInt = latestRoundData[1] as bigint;
         
-        // 价格需要除以 10^8 (Chainlink 的小数位数)
+        // Price must be divided by 10^8 (Chainlink's decimals)
         price = Number(priceAsBigInt) / (10 ** CHAINLINK_DECIMALS);
     }
 

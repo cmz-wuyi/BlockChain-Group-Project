@@ -8,7 +8,7 @@ import { sepolia } from "thirdweb/chains";
 import { deployPublishedContract } from "thirdweb/deploys";
 import { useActiveAccount, useReadContract } from "thirdweb/react"
 import { toWei } from "thirdweb/utils";
-import { useEthUsdPrice } from "@/app/hooks/useEthUsdPrice"; // 导入新 Hook
+import { useEthUsdPrice } from "@/app/hooks/useEthUsdPrice"; // Import the new hook
 
 
 export default function DashboardPage() {
@@ -83,7 +83,7 @@ const CreateCampaignModal = (
     
     // Deploy contract from CrowdfundingFactory
     const handleDeployContract = async () => {
-        // 确保价格已加载
+        // Ensure the price is loaded
         if (ethPrice === 0) {
             alert("Error fetching ETH price, please try again.");
             return;
@@ -91,7 +91,7 @@ const CreateCampaignModal = (
         setIsDeployingContract(true);
         try {
             console.log("Deploying contract...");
-            // 3. 转换逻辑
+            // 3. Conversion logic
             const goalInUsd = parseFloat(campaignGoal);
             // (USD Goal) / (ETH Price) = ETH Goal
             const goalInEth = goalInUsd / ethPrice;
@@ -99,8 +99,8 @@ const CreateCampaignModal = (
             const params = {
                 _name: campaignName,
                 _description: campaignDescription,
-                _goal: toWei(goalInEth.toString()), // 转换为 Wei
-                _durationInDays: BigInt(campaignDeadline) // 将 1 (number) 转换为 1n (bigint)
+                _goal: toWei(goalInEth.toString()), // Convert to Wei
+                _durationInDays: BigInt(campaignDeadline) // Convert 1 (number) to 1n (bigint)
             };
 
             const contractAddress = await deployPublishedContract({

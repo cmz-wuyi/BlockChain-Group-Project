@@ -32,27 +32,27 @@ export default function Home() {
       <div className="py-10">
         <h1 className="text-4xl font-bold mb-4">Campaigns:</h1>
         <div className="grid grid-cols-3 gap-4">
-          {/* A. 首先处理加载状态 */}
+          {/* A. Handle loading state first */}
           {isPendingCampaigns && (
             <p>Loading campaigns...</p>
           )}
 
-          {/* B. 加载完成，处理“无活动”的情况 */}
+          {/* B. Handle "no campaigns" state after loading */}
           {!isPendingCampaigns && (!campaigns || campaigns.length === 0) && (
             <p>No Campaigns</p>
           )}
 
-          {/* C. 加载完成，处理有活动的情况 */}
+          {/* C. Handle "campaigns available" state after loading */}
           {!isPendingCampaigns && campaigns && campaigns.length > 0 && (
             campaigns.map((campaign) => (
-              // 现在您可以使用 CampaignCard，或者先用简单的 div 测试
+              // You can use CampaignCard now, or test with a simple div
               <CampaignCard
                 key={campaign.campaignAddress}
                 campaignAddress={campaign.campaignAddress}
                 ethPrice={ethPrice}
                 isLoadingPrice={isLoadingPrice}
               />
-              /* // 或者使用您自己的简单 div 进行测试：
+              /* // Or use your own simple div for testing:
               <div key={campaign.campaignAddress}>
                  <p>Campaign: {campaign.name}</p>
                  <p>Address: {campaign.campaignAddress}</p>

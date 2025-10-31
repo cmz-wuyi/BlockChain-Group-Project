@@ -28,7 +28,7 @@ const fromWei = (
 };
 
 export default function CampaignPage() {
-    // 1. 在 CampaignPage 级别获取价格
+    // 1. Fetch price at the CampaignPage level
     const { price: ethPrice, isLoadingPrice } = useEthUsdPrice();
     const account = useActiveAccount();
     const { campaignAddress } = useParams();
@@ -80,12 +80,12 @@ export default function CampaignPage() {
         params: [],
     });
 
-    // Calulate the total funded balance percentage
+    // Calculate the total funded balance percentage
     let balancePercentage: number = 0;
     if (goal && balance && goal > 0n) {
-        // 使用 BigInt 进行安全计算
+        // Use BigInt for safe calculation
         const percentageBigInt = (balance * 100n) / goal;
-        balancePercentage = Number(percentageBigInt); // 转换为 Number 用于显示
+        balancePercentage = Number(percentageBigInt); // Convert to Number for display
     }
     if (balancePercentage >= 100) {
         balancePercentage = 100;
@@ -215,8 +215,8 @@ export default function CampaignPage() {
                 <CreateCampaignModal
                     setIsModalOpen={setIsModalOpen}
                     contract={contract}
-                    ethPrice={ethPrice} // <-- 传递价格
-                    isLoadingPrice={isLoadingPrice} // <-- 传递加载状态
+                    ethPrice={ethPrice} // <-- Pass price
+                    isLoadingPrice={isLoadingPrice} // <-- Pass loading state
                 />
             )}
         </div>
@@ -226,8 +226,8 @@ export default function CampaignPage() {
 type CreateTierModalProps = {
     setIsModalOpen: (value: boolean) => void
     contract: ThirdwebContract
-    ethPrice: number; // <-- 接收价格
-    isLoadingPrice: boolean; // <-- 接收加载状态
+    ethPrice: number; // <-- Receive price
+    isLoadingPrice: boolean; // <-- Receive loading state
 }
 
 const CreateCampaignModal = (
@@ -264,13 +264,13 @@ const CreateCampaignModal = (
                     />
                     <TransactionButton
                         transaction={() => {
-                            // --- 转换逻辑 ---
-                            // 1. 将 USD 字符串输入转换为数字
+                            // --- Conversion Logic ---
+                            // 1. Convert USD string input to a number
                             const tierAmountUsd = parseFloat(tierAmount);
 
-                            // 2. 健壮性检查 (Guard Clauses)
+                            // 2. Guard Clauses
                             if (isNaN(tierAmountUsd) || tierAmountUsd <= 0) {
-                                // 防止无效数字或0/负数金额
+                                // Prevent invalid numbers or 0/negative amounts
                                 alert("Please enter a valid Tier Cost.");
                                 throw new Error("Invalid Tier Cost");
                             }
@@ -279,35 +279,35 @@ const CreateCampaignModal = (
                                 throw new Error("ETH Price not loaded");
                             }
 
-                            // 3. 计算所需的 ETH 数量
+                            // 3. Calculate the required ETH amount
                             // (USD Tier Amount) / (ETH Price) = ETH Tier Amount
                             const tierAmountEth = tierAmountUsd / ethPrice;
 
-                            // 4. 准备合约调用
+                            // 4. Prepare the contract call
                             return prepareContractCall({
                                 contract: contract,
                                 method: "function addTier(string _name, uint256 _amount)",
-                                // 5. 将计算出的 ETH 数量转换为 Wei
+                                // 5. Convert the calculated ETH amount to Wei
                                 params: [tierName, toWei(tierAmountEth.toString())]
                             });
-                            // --- 转换逻辑结束 ---
+                            // --- End conversion logic ---
                         }}
                         onTransactionConfirmed={async () => {
-                            // 这是你原有的逻辑，当交易成功上链后触发
+                            // Original logic: fires when the transaction is confirmed
                             alert("Tier added successfully!");
                             setIsModalOpen(false);
                         }}
                         onError={(error) => {
-                            // 这是你原有的逻辑，当交易失败时触发
-                            // 我们可以在此改进一下日志
+                            // Original logic: fires on transaction error
+                            // We can improve the logging here
                             console.error("Tier Creation Error:", error);
                             alert(`Error adding tier: ${error.message}`);
                         }}
                         theme={lightTheme()}
-                        // 当价格正在加载或尚未加载时，禁用按钮
+                        // Disable button while price is loading or not yet loaded
                         disabled={isLoadingPrice || ethPrice === 0}
                     >
-                        {/* 根据价格加载状态显示不同的按钮文本 */}
+                        {/* Show different button text based on price loading state */}
                         {isLoadingPrice ? "Loading Price..." : "Add Tier"}
                     </TransactionButton>
                 </div>

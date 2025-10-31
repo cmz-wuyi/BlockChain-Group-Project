@@ -5,29 +5,29 @@ const fromWei = (
     weiAmount: bigint | undefined | null,
     decimals: number = 18
 ): string => {
-    // 1. 处理空值或0
+    // 1. Handle null, undefined, or 0
     if (!weiAmount || weiAmount === 0n) {
         return "0";
     }
 
     const divisor = 10n ** BigInt(decimals);
 
-    // 2. 计算整数部分
+    // 2. Calculate integer part
     const integerPart = (weiAmount / divisor).toString();
 
-    // 3. 计算小数部分
+    // 3. Calculate fractional part
     const remainder = weiAmount % divisor;
 
-    // 如果没有小数
+    // If there is no remainder
     if (remainder === 0n) {
         return integerPart;
     }
 
-    // 4. 格式化小数部分
-    // a. 将余数转为字符串，并在左侧填充0，使其达到18位
+    // 4. Format fractional part
+    // a. Convert remainder to string and pad with leading zeros to match decimals
     const fractionalPart = remainder.toString().padStart(decimals, '0');
 
-    // b. 去除末尾多余的0
+    // b. Trim trailing zeros
     // e.g., "500000000000000000" -> "5"
     // e.g., "001000000000000000" -> "001"
     const trimmedFractional = fractionalPart.replace(/0+$/, '');
@@ -46,7 +46,7 @@ type TierCardProps = {
     index: number;
     contract: ThirdwebContract
     isEditing: boolean;
-    // 添加的新 Props
+    // New props added
     ethPrice: number;
     isLoadingPrice: boolean;
 }

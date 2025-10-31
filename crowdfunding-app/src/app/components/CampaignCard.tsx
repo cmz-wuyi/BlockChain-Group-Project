@@ -8,25 +8,25 @@ const fromWei = (
     weiAmount: bigint | undefined | null,
     decimals: number = 18
 ): string => {
-    // 1. 处理空值或0
+    // 1. Handle null, undefined, or 0
     if (!weiAmount || weiAmount === 0n) {
         return "0";
     }
 
     const divisor = 10n ** BigInt(decimals);
 
-    // 2. 计算整数部分
+    // 2. Calculate integer part
     const integerPart = (weiAmount / divisor).toString();
 
-    // 3. 计算小数部分
+    // 3. Calculate fractional part
     const remainder = weiAmount % divisor;
 
-    // 如果没有小数
+    // If there is no remainder
     if (remainder === 0n) {
         return integerPart;
     }
 
-    // 4. 格式化小数部分
+    // 4. Format fractional part
     const fractionalPart = remainder.toString().padStart(decimals, '0');
     const trimmedFractional = fractionalPart.replace(/0+$/, '');
 
@@ -74,12 +74,12 @@ export const CampaignCard: React.FC<CampaignCardProps> = ({ campaignAddress, eth
         params: [],
     });
 
-    // Calulate the total funded balance percentage
+    // Calculate the total funded balance percentage
     let balancePercentage: number = 0;
     if (goal && balance && goal > 0n) {
-        // 使用 BigInt 进行安全计算
+        // Use BigInt for safe calculation
         const percentageBigInt = (balance * 100n) / goal;
-        balancePercentage = Number(percentageBigInt); // 转换为 Number 用于显示
+        balancePercentage = Number(percentageBigInt); // Convert to Number for display
     }
     if (balancePercentage >= 100) {
         balancePercentage = 100;
