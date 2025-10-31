@@ -5,7 +5,8 @@ import { sepolia } from "thirdweb/chains";
 import { getContract } from "thirdweb";
 import { CROWDFUNDING_FACTORY } from "./constants/contracts";
 import { CampaignCard } from "./components/CampaignCard";
-import { CROWDFUNDING_FACTORY_ABI } from "@/app/constants/CrowdfundingFactoryABI"; //
+import { CROWDFUNDING_FACTORY_ABI } from "@/app/constants/CrowdfundingFactoryABI"; 
+import { useEthUsdPrice } from "./hooks/useEthUsdPrice";
 
 export default function Home() {
   // Get CrowdfundingFactory contract
@@ -16,7 +17,7 @@ export default function Home() {
     abi: CROWDFUNDING_FACTORY_ABI,
   });
 
-  console.log(contract.address);
+  const { price: ethPrice, isLoadingPrice } = useEthUsdPrice();
 
   const {data: campaigns, isPending: isPendingCampaigns, refetch: refetchCampaigns } = useReadContract({
     contract: contract,
@@ -25,8 +26,6 @@ export default function Home() {
     // "function getAllCampaigns() view returns ((address campaignAddress, address owner, string name)[])",
     params: []
   });
-
-  console.log("Campaigns data:", campaigns);
 
   return (
     <main className="mx-auto max-w-7xl px-4 mt-4 sm:px-6 lg:px-8">
@@ -50,6 +49,8 @@ export default function Home() {
               <CampaignCard
                 key={campaign.campaignAddress}
                 campaignAddress={campaign.campaignAddress}
+                ethPrice={ethPrice}
+                isLoadingPrice={isLoadingPrice}
               />
               /* // 或者使用您自己的简单 div 进行测试：
               <div key={campaign.campaignAddress}>

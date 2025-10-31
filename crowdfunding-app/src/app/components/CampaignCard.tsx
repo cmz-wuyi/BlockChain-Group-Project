@@ -4,11 +4,42 @@ import { getContract } from "thirdweb";
 import { sepolia } from "thirdweb/chains";
 import { useReadContract } from "thirdweb/react";
 
-type CampaignCardProps = {
-    campaignAddress: string;
+const fromWei = (
+    weiAmount: bigint | undefined | null,
+    decimals: number = 18
+): string => {
+    // 1. 处理空值或0
+    if (!weiAmount || weiAmount === 0n) {
+        return "0";
+    }
+
+    const divisor = 10n ** BigInt(decimals);
+
+    // 2. 计算整数部分
+    const integerPart = (weiAmount / divisor).toString();
+
+    // 3. 计算小数部分
+    const remainder = weiAmount % divisor;
+
+    // 如果没有小数
+    if (remainder === 0n) {
+        return integerPart;
+    }
+
+    // 4. 格式化小数部分
+    const fractionalPart = remainder.toString().padStart(decimals, '0');
+    const trimmedFractional = fractionalPart.replace(/0+$/, '');
+
+    return `${integerPart}.${trimmedFractional}`;
 };
 
-export const CampaignCard: React.FC<CampaignCardProps> = ({ campaignAddress }) => {
+type CampaignCardProps = {
+    campaignAddress: string;
+    ethPrice: number;
+    isLoadingPrice: boolean;
+};
+
+export const CampaignCard: React.FC<CampaignCardProps> = ({ campaignAddress, ethPrice, isLoadingPrice }) => {
     const contract = getContract({
         client: client,
         chain: sepolia,
@@ -44,14 +75,33 @@ export const CampaignCard: React.FC<CampaignCardProps> = ({ campaignAddress }) =
     });
 
     // Calulate the total funded balance percentage
-    const totalBalance = balance?.toString();
-    const totalGoal = goal?.toString();
-    let balancePercentage = (parseInt(totalBalance as string) / parseInt(totalGoal as string)) * 100;
-
-    // If balance is greater than or equal to goal, percentage should be 100
+    let balancePercentage: number = 0;
+    if (goal && balance && goal > 0n) {
+        // 使用 BigInt 进行安全计算
+        const percentageBigInt = (balance * 100n) / goal;
+        balancePercentage = Number(percentageBigInt); // 转换为 Number 用于显示
+    }
     if (balancePercentage >= 100) {
         balancePercentage = 100;
     }
+
+    const formatWeiToUsd = (wei: bigint | undefined): string => {
+        if (!wei || isLoadingPrice || ethPrice === 0) return "$....";
+        
+        try {
+            const ethValueStr = fromWei(wei);
+            const ethValue = parseFloat(ethValueStr);
+            const usdValue = ethValue * ethPrice;
+    
+            return usdValue.toLocaleString('en-US', {
+                style: 'currency',
+                currency: 'USD'
+            });
+        } catch (error) {
+            console.error("Error formatting Wei to USD:", error);
+            return "$0.00";
+        }
+    };
 
     return (
             <div className="flex flex-col justify-between max-w-sm p-6 bg-white border border-slate-200 rounded-lg shadow">
@@ -60,12 +110,15 @@ export const CampaignCard: React.FC<CampaignCardProps> = ({ campaignAddress }) =
                         <div className="mb-4">
                             <div className="relative w-full h-6 bg-gray-200 rounded-full dark:bg-gray-700">
                                 <div className="h-6 bg-blue-600 rounded-full dark:bg-blue-500 text-right" style={{ width: `${balancePercentage?.toString()}%`}}>
-                                    <p className="text-white dark:text-white text-xs p-1">${balance?.toString()}</p>
+                                    <p className="text-white dark:text-white text-xs p-1">{formatWeiToUsd(balance)}</p>
                                 </div>
                                 <p className="absolute top-0 right-0 text-white dark:text-white text-xs p-1">
                                     {balancePercentage >= 100 ? "" : `${balancePercentage?.toString()}%`}
                                 </p>
                             </div>
+                            <p className="text-sm text-gray-600 mt-1">
+                                Goal: {formatWeiToUsd(goal)}
+                            </p>
                         </div>
                         
                     )}
