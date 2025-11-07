@@ -74,7 +74,7 @@ export default function CampaignPage() {
     });
     
     // Total funded balance of the campaign
-    const { data: balance, isLoading: isLoadingBalance } = useReadContract({
+    const { data: balance, isLoading: isLoadingBalance, refetch: refetchBalance } = useReadContract({
         contract: contract,
         method: "function getContractBalance() view returns (uint256)",
         params: [],
@@ -111,6 +111,17 @@ export default function CampaignPage() {
         method: "function state() view returns (uint8)", 
         params: [] 
       });
+    
+    // 读取当前连接用户的资助信息
+    // 我们只关心 backers(address) 返回的 struct 中的第一个值 (totalContribution)
+    const { data: userContribution, refetch: refetchUserContribution } = useReadContract({
+        contract: contract,
+        method: "function backers(address) view returns (uint256)",
+        params: [account?.address as string], // 传入当前用户的地址
+        queryOptions: {
+            enabled: !!account, // 仅在用户连接钱包后才执行此查询
+        }
+    });  
       
     const formatWeiToUsd = (wei: bigint | undefined): string => {
         if (!wei || isLoadingPrice || ethPrice === 0) return "$....";
@@ -146,10 +157,66 @@ export default function CampaignPage() {
                                 status === 2 ? " Failed" : "Unknown"}
                             </p>
                         )}
+                        {/* 仅在“活动成功” (status === 1) 且 “当前用户是 Owner” 时显示 */}
+                        {status === 1 && (
+                            <TransactionButton
+                                transaction={() => prepareContractCall({
+                                    contract: contract,
+                                    method: "function withdraw()", // 调用 Crowdfunding.sol 的 withdraw
+                                    params: [] // 无参数
+                                })}
+                                onTransactionConfirmed={() => {
+                                    alert("Funds Withdrawn Successfully!");
+                                    refetchBalance(); // 关键：刷新余额
+                                }}
+                                onError={(error) => alert(`Error: ${error.message}`)}
+                                style={{
+                                    backgroundColor: "#16a34a", // 绿色表示成功/提款
+                                    color: "white",
+                                    padding: "0.5rem 1rem",
+                                    borderRadius: "0.375rem",
+                                    cursor: "pointer",
+                                }}
+                            >
+                                Withdraw Funds
+                            </TransactionButton>
+                        )}
                         <button
                             className="px-4 py-2 bg-blue-500 text-white rounded-md"
                             onClick={() => setIsEditing(!isEditing)}
                         >{isEditing ? "Done" : "Edit"}</button>
+                    </div>
+                )}
+                {/* 显示退款按钮的条件:
+                  1. 活动状态为 "Failed" (status === 2)
+                  2. 当前用户已连接 (!!account)
+                  3. 当前用户确实资助过 (userContribution > 0n)
+                  4. 当前用户不是项目方 (account?.address !== owner) (可选，但逻辑上更清晰)
+                */}
+                {status === 2 && account && userContribution && userContribution > 0n && (
+                    <div className="flex flex-row">
+                        <TransactionButton
+                            transaction={() => prepareContractCall({
+                                contract: contract,
+                                method: "function refund()", // 调用 Crowdfunding.sol 的 refund
+                                params: [] // 无参数
+                            })}
+                            onTransactionConfirmed={() => {
+                                alert("Refund Successful! Your funds are being returned.");
+                                refetchBalance(); // 刷新合约总余额
+                                refetchUserContribution(); // 刷新用户的余额 (将变为 0)
+                            }}
+                            onError={(error) => alert(`Error: ${error.message}`)}
+                            style={{
+                                backgroundColor: "#dc2626", // 红色表示失败/退款
+                                color: "white",
+                                padding: "0.5rem 1rem",
+                                borderRadius: "0.375rem",
+                                cursor: "pointer",
+                            }}
+                        >
+                            Get Refund ({(formatWeiToUsd(userContribution))})
+                        </TransactionButton>
                     </div>
                 )}
             </div>
