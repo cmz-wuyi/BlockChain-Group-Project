@@ -37,6 +37,7 @@ contract Crowdfunding {
     /// @notice Modifier to ensure the campaign is active
     modifier campaignOpen() {
         require(state == CampaignState.Active, "Campaign is not active.");
+        require(block.timestamp < deadline, "Campaign has ended.");
         _;
     }
 
@@ -77,14 +78,16 @@ contract Crowdfunding {
 
     /// @notice Allows a user to fund a specific tier
     function fund(uint256 _tierIndex) public payable campaignOpen notPaused {
+        checkAndUpdateCampaignState(); // Check if state needs updating
+        require(state == CampaignState.Active, "Campaign is not active.");
         require(_tierIndex < tiers.length, "Invalid tier.");
         require(msg.value == tiers[_tierIndex].amount, "Incorrect amount.");
         
         tiers[_tierIndex].backers++;
         backers[msg.sender].totalContribution += msg.value; // Record the backer's contribution
         backers[msg.sender].fundedTiers[_tierIndex] = true; // Mark the tier as funded by this backer
-
-        checkAndUpdateCampaignState(); // Check if state needs updating
+        checkAndUpdateCampaignState();
+        
     }
 
     /// @notice Allows the owner to withdraw funds if the campaign is successful
@@ -158,6 +161,8 @@ contract Crowdfunding {
 
     /// @notice Extends the campaign deadline (owner only, only if active)
     function extendDeadline(uint256 _daysToAdd) public onlyOwner campaignOpen {
+        checkAndUpdateCampaignState(); 
+        require(state == CampaignState.Active, "Campaign is not active.");
         deadline += _daysToAdd * 1 days;
     }
 }

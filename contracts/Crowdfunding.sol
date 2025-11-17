@@ -9,43 +9,51 @@ contract Crowdfunding {
     address public owner;
     bool public paused;
 
-    enum CampaignState { Active, Successful, Failed } //众筹活动状态
+    /// @notice Enum for the state of the crowdfunding campaign
+    enum CampaignState { Active, Successful, Failed }
     CampaignState public state;
 
-    struct Tier { //捐款等级
+    /// @notice Struct for donation tiers
+    struct Tier {
         string name;
         uint256 amount;
-        uint256 backers; //支持者数量
+        uint256 backers; // Number of backers for this tier
     }
     Tier[] public tiers;
 
-    struct Backer { //支持者信息
-        uint256 totalContribution; //捐款金额
-        mapping(uint256 => bool) fundedTiers; //支持者的捐款等级
+    /// @notice Struct for backer information
+    struct Backer {
+        uint256 totalContribution; // Total contribution amount from this backer
+        mapping(uint256 => bool) fundedTiers; // Mapping of tiers this backer has funded
     }
     mapping(address => Backer) public backers;
 
-    modifier onlyOwner() { //操作人限制
+    /// @notice Modifier to restrict actions to the owner
+    modifier onlyOwner() {
         require(msg.sender == owner, "Not the owner");
         _;
     }
     
-    modifier campaignOpen() { //活动状态限制
+    /// @notice Modifier to ensure the campaign is active
+    modifier campaignOpen() {
         require(state == CampaignState.Active, "Campaign is not active.");
+        require(block.timestamp < deadline, "Campaign has ended.");
         _;
     }
 
-    modifier notPaused() { //活动暂停限制
+    /// @notice Modifier to ensure the contract is not paused
+    modifier notPaused() {
         require(!paused, "Contract is paused.");
         _;
     }
 
-    constructor( //录入信息
+    /// @notice Constructor to initialize the campaign
+    constructor(
         address _owner,
-        string memory _name, //捐款名称
-        string memory _description, //捐款描述
-        uint256 _goal, //捐款目标
-        uint256 _duratyionInDays //截止天数
+        string memory _name, // Campaign name
+        string memory _description, // Campaign description
+        uint256 _goal, // Campaign goal
+        uint256 _duratyionInDays // Campaign duration in days
     ) {
         name = _name;
         description = _description;
@@ -55,38 +63,50 @@ contract Crowdfunding {
         state = CampaignState.Active;
     }
 
-    function checkAndUpdateCampaignState() internal { //检查并更新众筹活动状态，是否结束或达到要求
+    /// @notice Internal function to check and update the campaign state
+    function checkAndUpdateCampaignState() internal {
         if(state == CampaignState.Active) {
             if(block.timestamp >= deadline) {
-                state = address(this).balance >= goal ? CampaignState.Successful : CampaignState.Failed;            
+                state = address(this).balance >= goal ?
+                    CampaignState.Successful : CampaignState.Failed;            
             } else {
-                state = address(this).balance >= goal ? CampaignState.Successful : CampaignState.Active;
+                state = address(this).balance >= goal ?
+                    CampaignState.Successful : CampaignState.Active;
             }
         }
     }
 
-    function fund(uint256 _tierIndex) public payable campaignOpen notPaused{ //捐款
+    /// @notice Allows a user to fund a specific tier
+    function fund(uint256 _tierIndex) public payable campaignOpen notPaused {
+        checkAndUpdateCampaignState(); // Check if state needs updating
+        require(state == CampaignState.Active, "Campaign is not active.");
         require(_tierIndex < tiers.length, "Invalid tier.");
         require(msg.value == tiers[_tierIndex].amount, "Incorrect amount.");
+        
         tiers[_tierIndex].backers++;
-        backers[msg.sender].totalContribution += msg.value; //录入支持者捐款数量
-        backers[msg.sender].fundedTiers[_tierIndex] = true; //录入支持者钱包地址与支持等级
-        checkAndUpdateCampaignState(); //检查活动是否结束或达到要求
+        backers[msg.sender].totalContribution += msg.value; // Record the backer's contribution
+        backers[msg.sender].fundedTiers[_tierIndex] = true; // Mark the tier as funded by this backer
+        checkAndUpdateCampaignState();
+        
     }
 
-    function withdraw() public onlyOwner{ //提款
-        checkAndUpdateCampaignState(); //检查活动是否结束或达到要求
+    /// @notice Allows the owner to withdraw funds if the campaign is successful
+    function withdraw() public onlyOwner {
+        checkAndUpdateCampaignState(); // Ensure state is current
         require(state == CampaignState.Successful, "Campaign not successful.");
         uint256 balance = address(this).balance;
         require(balance > 0, "No balance to withdraw");
+        
         payable(owner).transfer(balance);
     }
 
-    function getContractBalance() public view returns (uint256) {//查看捐款数量
+    /// @notice Gets the current balance of the contract
+    function getContractBalance() public view returns (uint256) {
         return address(this).balance;
     }
 
-    function addTier( //添加捐款等级
+    /// @notice Adds a new funding tier (owner only)
+    function addTier(
         string memory _name,
         uint256 _amount
     ) public onlyOwner {
@@ -94,41 +114,55 @@ contract Crowdfunding {
         tiers.push(Tier(_name, _amount, 0));
     }
 
-    function removeTier(uint256 _index) public onlyOwner { //移除捐款等级
+    /// @notice Removes a funding tier (owner only)
+    function removeTier(uint256 _index) public onlyOwner {
         require(_index < tiers.length, "Tier does not exist.");
+        // Note: This logic for removal is potentially unsafe if tiers have backers.
+        // A safer approach would be to check tiers[_index].backers == 0
         tiers[_index] = tiers[tiers.length -1];
         tiers.pop();
     }
 
-    function getTiers() public view returns (Tier[] memory) { //显示捐款等级
+    /// @notice Returns all available tiers
+    function getTiers() public view returns (Tier[] memory) {
         return tiers;
     }
 
-    function refund() public { //活动失败后进行退款
-        checkAndUpdateCampaignState(); //检查活动是否结束或达到要求
+    /// @notice Allows backers to claim a refund if the campaign failed
+    function refund() public {
+        checkAndUpdateCampaignState(); // Ensure state is current
         require(state == CampaignState.Failed, "Refunds not available.");
+        
         uint256 amount = backers[msg.sender].totalContribution;
         require(amount > 0, "No contribution to refund");
+        
         backers[msg.sender].totalContribution = 0;
         payable(msg.sender).transfer(amount);
     }
 
-    function hasFundedTier(address _backer, uint256 _tierIndex) public view returns (bool) { //检查用户是否为某个捐款等级提供资金
+    /// @notice Checks if a specific backer has funded a specific tier
+    function hasFundedTier(address _backer, uint256 _tierIndex) public view returns (bool) {
         return backers[_backer].fundedTiers[_tierIndex];
     }
 
-    function togglePause() public onlyOwner { //暂停操作
+    /// @notice Toggles the paused state of the contract (owner only)
+    function togglePause() public onlyOwner {
         paused = !paused;
     }
 
-    function getCampaignStatus() public view returns (CampaignState) { //显示众筹活动状态
+    /// @notice Gets the current status of the campaign
+    function getCampaignStatus() public view returns (CampaignState) {
         if (state == CampaignState.Active && block.timestamp > deadline) {
-            return address(this).balance >= goal ? CampaignState.Successful : CampaignState.Failed;
+            return address(this).balance >= goal ?
+                CampaignState.Successful : CampaignState.Failed;
         }
         return state;
     }
 
-    function extendDeadline(uint256 _daysToAdd) public onlyOwner campaignOpen { //延长总筹活动天数
+    /// @notice Extends the campaign deadline (owner only, only if active)
+    function extendDeadline(uint256 _daysToAdd) public onlyOwner campaignOpen {
+        checkAndUpdateCampaignState(); 
+        require(state == CampaignState.Active, "Campaign is not active.");
         deadline += _daysToAdd * 1 days;
     }
 }
