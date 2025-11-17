@@ -95,14 +95,66 @@ The dApp is the user interface for interacting with the smart contracts:
    - It uses the `TransactionButton` component for all write operations (e.g., `fund`), which simplifies transaction state management ().
 
 
+## 5. Project Directory Structure
 
-## 5. Getting Started (Local Development)
+This project is organized as a monorepo containing both the smart contract development environment and the frontend application.
+
+### 📂 `crowdfunding-platform` (Smart Contracts)
+
+The Foundry-based environment for contract development, testing, and deployment.
+
+- **`src/`**: Contains the Solidity smart contracts.
+  - **`CrowdfundingFactory.sol`**: The factory contract implementing the registry pattern to deploy and track campaigns.
+  - **`Crowdfunding.sol`**: The core logic for individual crowdfunding campaigns, handling funds, states, and refunds.
+- **`test/`**: Foundry test suites (`.t.sol`) ensuring contract security and logic correctness.
+- **`foundry.toml`**: Configuration file for the Foundry toolkit (remappings, compiler settings, etc.).
+
+
+
+### 📂 `crowdfunding-app` (Frontend dApp)
+
+The Next.js application that interacts with the deployed contracts using the thirdweb SDK.
+
+- **`src/app/`**: Utilizes the Next.js App Router for navigation.
+  - **`page.tsx`**: The landing page displaying all active campaigns.
+  - **`dashboard/[walletAddress]/`**: Personalized dashboard for campaign creators/page.tsx].
+  - **`campaign/[campaignAddress]/`**: Dynamic route for viewing individual campaign details and funding them/page.tsx].
+- **`src/components/`**: Reusable UI components.
+  - **`Navbar.tsx`**: Handles wallet connection and navigation.
+  - **`CampaignCard.tsx`**: Displays campaign summaries (goal, deadline, raised amount).
+- **`src/hooks/`**: Custom Web3 hooks.
+  - **`useEthUsdPrice.tsx`**: Integrates Chainlink Oracle to convert USD goals to ETH.
+- **`src/constants/`**: Stores ABI files and contract addresses required for frontend interaction.
+
+
+
+### 📂 `contracts`
+
+Contains the core Solidity smart contract source code, serving as the single source of truth for the project's business logic.
+
+- **`CrowdfundingFactory.sol`**: The factory contract implementing the registry pattern to deploy and track campaigns.
+- **`Crowdfunding.sol`**: The core logic for individual crowdfunding campaigns, handling funds, states, tiers, and refunds.
+
+
+
+### 📂 `test-unit`
+
+Contains a comprehensive suite of modular unit tests (`.t.sol`) ensuring the security and correctness of specific contract features.
+
+- **`CampaignCreationTest.t.sol`**: Validates the entire lifecycle of campaign creation, including factory deployment and data storage verification.
+- **`FundTest.t.sol`**: Tests the funding mechanism, ensuring backers can correctly contribute to tiers.
+- **`WithdrawTest.t.sol`**: Secures the withdrawal process, ensuring only owners can withdraw from successful campaigns.
+- **`RefundTest.t.sol`**: Verifies that backers can retrieve their funds if a campaign fails.
+- **`PauseTest.t.sol`**: Checks the emergency pause functionality for contract security.
+
+
+## 6. Getting Started (Local Development)
 
 
 Please refer to the README.md files in the crowdfunding-platform folder and the crowdfunding-app folder.
 
 
-## 6. Security & Known Issues
+## 7. Security & Known Issues
 
 
 
@@ -129,7 +181,7 @@ Security Considerations (Assignment R4 16)
 
 
 
-## 7. License
+## 8. License
 
 
 
